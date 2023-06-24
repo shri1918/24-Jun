@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Coin Data</title>
+  <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<style>
+    body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: black;
+  color: white;
+}
+
+h1 {
+  text-align: center;
+}
+
+.controls {
+  margin-bottom: 20px;
+}
+
+#searchInput {
+  padding: 5px;
+  margin-right: 10px;
+  background-color: black;
+  border: 1px solid gray;
+  color: white;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table th,
+table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+#searchButton {
+    background-color: black;
+  border: 1px solid gray;
+  color: white;
+}
+#sortPercentageButton {
+    background-color: black;
+  border: 1px solid gray;
+  color: white;
+}
+#sortButton {
+    background-color: black;
+  border: 1px solid gray;
+  color: white;
+}
+
+
+
+</style>
+<body>
+  <!-- <h1>Coin Data</h1> -->
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="Search by name, symbol, or percentage change">
+    <button id="searchButton">Search</button>
+    <button id="sortButton">Sort by Market Cap</button>
+    <button id="sortPercentageButton">Sort by Percentage Change</button>
+  </div>
+  <table id="coinTable">
+    <thead>
+      <tr>
+        <th></th>
+        <th></th>
+        <th></th>
+        <th></th>
+        <th></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="coinTableBody">
+    </tbody>
+  </table>
+  <script>
+    const coinApiUrl =
+      "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false";
+
+    // Fetch data using .then
+    fetch(coinApiUrl)
+      .then((response) => response.json())
+      .then((data) => renderTable(data))
+      .catch((error) => console.log("Error fetching data:", error));
+
+    // Fetch data using async/await
+    async function fetchData() {
+      try {
+        const response = await fetch(coinApiUrl);
+        const data = await response.json();
+        renderTable(data);
+      } catch (error) {
+        console.log("Error fetching data:", error);
+      }
+    }
+
+    // Render table
+    function renderTable(data) {
+      const coinTableBody = document.getElementById("coinTableBody");
+      coinTableBody.innerHTML = "";
+
+      data.forEach((coin) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td><img src="${coin.image}" alt="${coin.name}" width="25" height="25"></td>
+          <td>${coin.name}</td>
+          <td>${coin.symbol.toUpperCase()}</td>
+          <td>${coin.current_price}</td>
+          <td>${coin.total_volume}</td>
+          <td>${coin.price_change_percentage_24h}%</td>
+        `;
+        coinTableBody.appendChild(row);
+      });
+    }
+
+    // Search button
+    const searchButton = document.getElementById("searchButton");
+    searchButton.addEventListener("click", handleSearch);
+
+    function handleSearch() {
+      const searchInput = document.getElementById("searchInput");
+      const searchText = searchInput.value.toLowerCase();
+      const coinRows = document.querySelectorAll("#coinTableBody tr");
+
+      coinRows.forEach((row) => {
+        const name = row.cells[1].textContent.toLowerCase();
+        const symbol = row.cells[2].textContent.toLowerCase();
+        const percentageChange = row.cells[5].textContent.toLowerCase();
+
+        if (name.includes(searchText) || symbol.includes(searchText) || percentageChange.includes(searchText)) {
+          row.style.display = "";
+        } else {
+          row.style.display = "none";
+        }
+      });
+    }
+
+    // Sort button for Market Cap
+    const sortButton = document.getElementById("sortButton");
+    sortButton.addEventListener("click", handleSort);
+
+    function handleSort() {
+      const coinTableBody = document.getElementById("coinTableBody");
+      const coinRows = Array.from(coinTableBody.getElementsByTagName("tr"));
+      const sortedRows = coinRows.slice(1).sort((a, b) => {
+        const marketCapA = parseFloat(a.cells[3].textContent.replace(/[$,]/g, ""));
+        const marketCapB = parseFloat(b.cells[3].textContent.replace(/[$,]/g, ""));
+        return marketCapB - marketCapA;
+      });
+
+      coinTableBody.innerHTML = "";
+      coinTableBody.appendChild(coinRows[0]);
+
+      sortedRows.forEach((row) => {
+        coinTableBody.appendChild(row);
+      });
+    }
+
+    // Sort button for Percentage Change
+    const sortPercentageButton = document.getElementById("sortPercentageButton");
+    sortPercentageButton.addEventListener("click", handleSortPercentage);
+
+    function handleSortPercentage() {
+      const coinTableBody = document.getElementById("coinTableBody");
+      const coinRows = Array.from(coinTableBody.getElementsByTagName("tr"));
+      const sortedRows = coinRows.slice(1).sort((a, b) => {
+        const percentageChangeA = a.cells[5].textContent.replace(/[$,%]/g, "");
+        const percentageChangeB = b.cells[5].textContent.replace(/[$,%]/g, "");
+        return parseFloat(percentageChangeB) - parseFloat(percentageChangeA);
+      });
+
+      coinTableBody.innerHTML = "";
+      coinTableBody.appendChild(coinRows[0]);
+
+      sortedRows.forEach((row) => {
+        coinTableBody.appendChild(row);
+      });
+    }
+
+  </script>
+</body>
+</html>
